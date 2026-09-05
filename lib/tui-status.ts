@@ -215,7 +215,10 @@ function formatAccountEmail(
 ): string | undefined {
 	const trimmed = email?.trim() || undefined;
 	if (!trimmed) return undefined;
-	const display = maskEmail ? maskEmailsInText(trimmed, true) : trimmed;
+	if (!maskEmail) return `[${trimmed}]`;
+	const display = EMAIL_PATTERN.test(trimmed)
+		? maskEmailsInText(trimmed, true)
+		: (maskEmailForDisplay(trimmed) ?? MASKED_EMAIL);
 	return display ? `[${display}]` : undefined;
 }
 
