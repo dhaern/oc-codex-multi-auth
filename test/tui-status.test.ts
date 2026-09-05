@@ -412,7 +412,7 @@ describe("formatResetTime day context", () => {
 		// America/New_York; a millisecond division would misread it as six.
 		vi.setSystemTime(new Date(2026, 2, 2, 12, 0));
 		const reset = new Date(2026, 2, 9, 2, 25);
-		const expected = `${reset.toLocaleDateString("en-US", { month: "short", day: "2-digit" })} ${reset.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
+		const expected = `${reset.toLocaleDateString(undefined, { month: "short", day: "2-digit" })} ${reset.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })}`;
 		const out = formatPromptStatusText({
 			quota: {
 				...quota,
