@@ -65,6 +65,7 @@ const variantSuffixes: ReasoningVariant[] = [
 	"none",
 ];
 const STATUS_SEPARATOR = ` ${String.fromCharCode(183)} `;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const WARNING_LIMIT_LEFT_PERCENT = 25;
 const DANGER_LIMIT_LEFT_PERCENT = 10;
 const MASKED_EMAIL = "*****";
@@ -302,11 +303,14 @@ function formatQuota(quota: CompactQuotaStatus): string | undefined {
 }
 
 function maxStatusChars(width: number | undefined): number {
-	if (!width || !Number.isFinite(width)) return 32;
-	if (width >= 120) return 48;
-	if (width >= 96) return 40;
-	if (width >= 78) return 32;
-	if (width >= 60) return 22;
+	// Budgets are ~54% of each tier's minimum width (up from ~40%): the
+	// day-context reset labels and typical account hints no longer fit at
+	// 40%, which degraded informative candidates on mid-width terminals.
+	if (!width || !Number.isFinite(width)) return 42;
+	if (width >= 120) return 64;
+	if (width >= 96) return 52;
+	if (width >= 78) return 42;
+	if (width >= 60) return 32;
 	return 12;
 }
 
@@ -401,11 +405,30 @@ function formatResetTime(resetAtMs: number | undefined): string | undefined {
 	}
 	const date = new Date(resetAtMs);
 	if (!Number.isFinite(date.getTime())) return undefined;
-	return date.toLocaleTimeString(undefined, {
+	const time = date.toLocaleTimeString(undefined, {
 		hour: "2-digit",
 		minute: "2-digit",
 		hour12: false,
 	});
+	const now = new Date();
+	const sameDay =
+		now.getFullYear() === date.getFullYear() &&
+		now.getMonth() === date.getMonth() &&
+		now.getDate() === date.getDate();
+	if (sameDay) return time;
+	const dayDiff = (date.setHours(0, 0, 0, 0) - now.setHours(0, 0, 0, 0)) /
+		MS_PER_DAY;
+	// Within a week each weekday occurs exactly once, so the weekday alone
+	// disambiguates weekly windows; beyond that the absolute date does.
+	if (dayDiff > 0 && dayDiff < 7) {
+		const weekday = date.toLocaleDateString(undefined, { weekday: "short" });
+		return `${weekday} ${time}`;
+	}
+	const day = date.toLocaleDateString(undefined, {
+		month: "short",
+		day: "2-digit",
+	});
+	return `${day} ${time}`;
 }
 
 function formatUpdatedAge(fetchedAt: number | undefined, now: number): string {

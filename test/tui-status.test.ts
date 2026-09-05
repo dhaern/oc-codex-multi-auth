@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
 	formatPromptStatusText,
@@ -10,16 +10,17 @@ import {
 	type PromptStatusMessage,
 } from "../lib/tui-status.js";
 
+const sep = ` ${String.fromCharCode(183)} `;
+const quota: CompactQuotaStatus = {
+	type: "ready",
+	limits: [
+		{ label: "5h", leftPercent: 88 },
+		{ label: "7d", leftPercent: 83 },
+	],
+	stale: false,
+};
+
 describe("TUI prompt status helpers", () => {
-	const sep = ` ${String.fromCharCode(183)} `;
-	const quota: CompactQuotaStatus = {
-		type: "ready",
-		limits: [
-			{ label: "5h", leftPercent: 88 },
-			{ label: "7d", leftPercent: 83 },
-		],
-		stale: false,
-	};
 
 	it("formats prompt status text from supplied quota labels", () => {
 		expect(
@@ -333,5 +334,52 @@ describe("TUI prompt status helpers", () => {
 		};
 
 		expect(resolvePromptReasoningVariant({ config })).toBe("xhigh");
+	});
+});
+
+describe("formatResetTime day context", () => {
+	// Freeze the clock so day-distance assertions are stable.
+	const realNow = Date.now;
+	const now = Date.UTC(2026, 8, 5, 12, 0); // 2026-09-05T12:00Z
+
+	beforeEach(() => {
+		vi.spyOn(Date, "now").mockReturnValue(now);
+	});
+	afterEach(() => {
+		vi.spyOn(Date, "now").mockRestore();
+		void realNow;
+	});
+
+	it("keeps time-only format for same-day resets", () => {
+		const out = formatPromptStatusText({
+			quota: {
+				...quota,
+				limits: [{ label: "5h", leftPercent: 8, resetAtMs: Date.UTC(2026, 8, 5, 18, 30) }],
+			},
+			width: 120,
+		});
+		expect(out).toMatch(/resets \d{2}:\d{2}$/);
+	});
+
+	it("adds weekday for resets within the coming week", () => {
+		const out = formatPromptStatusText({
+			quota: {
+				...quota,
+				limits: [{ label: "7d", leftPercent: 0, resetAtMs: Date.UTC(2026, 8, 8, 2, 25) }],
+			},
+			width: 120,
+		});
+		expect(out).toMatch(/resets [A-Z][a-z]{2} \d{2}:\d{2}$/);
+	});
+
+	it("uses absolute date beyond a week", () => {
+		const out = formatPromptStatusText({
+			quota: {
+				...quota,
+				limits: [{ label: "7d", leftPercent: 0, resetAtMs: Date.UTC(2026, 8, 15, 2, 25) }],
+			},
+			width: 120,
+		});
+		expect(out).toMatch(/resets [A-Z][a-z]{2} \d{2} \d{2}:\d{2}$/);
 	});
 });
