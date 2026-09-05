@@ -69,8 +69,8 @@ const STATUS_SEPARATOR = ` ${String.fromCharCode(183)} `;
 const WARNING_LIMIT_LEFT_PERCENT = 25;
 const DANGER_LIMIT_LEFT_PERCENT = 10;
 const MASKED_EMAIL = "*****";
-const EMAIL_PATTERN = /[^\s(),<>]+@[^\s(),<>]+/;
-const EMAIL_PATTERN_GLOBAL = /[^\s(),<>]+@[^\s(),<>]+/g;
+const EMAIL_PATTERN = /[^\s(),<>,;]+@[^\s(),<>,;]+/;
+const EMAIL_PATTERN_GLOBAL = /[^\s(),<>,;]+@[^\s(),<>,;]+/g;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -215,7 +215,7 @@ function formatAccountEmail(
 ): string | undefined {
 	const trimmed = email?.trim() || undefined;
 	if (!trimmed) return undefined;
-	const display = maskEmail ? maskEmailForDisplay(trimmed) : trimmed;
+	const display = maskEmail ? maskEmailsInText(trimmed, true) : trimmed;
 	return display ? `[${display}]` : undefined;
 }
 

@@ -254,6 +254,22 @@ describe("TUI prompt status helpers", () => {
 		expect(one).not.toContain("javi.ortiz.1982@gmail.com");
 	});
 
+	it("masks each punctuation-separated email in free-text labels", () => {
+		const out = formatPromptStatusText({
+			quota: {
+				...quota,
+				accountIndex: 1,
+				accountCount: 3,
+				accountEmail: "alice@example.com;bob@corp.com",
+			},
+			width: 120,
+			maskEmail: true,
+		});
+		expect(out).toContain("[al***@example.com;bo***@corp.com]");
+		expect(out).not.toContain("alice@example.com");
+		expect(out).not.toContain("bob@corp.com");
+	});
+
 	it("masks emails embedded in free-text account labels", () => {
 		const out = formatPromptStatusText({
 			quota: {
