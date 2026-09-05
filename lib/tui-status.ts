@@ -1,4 +1,5 @@
 import type { Config } from "@opencode-ai/sdk/v2";
+import { maskEmailForDisplay } from "./account-display.js";
 import { getEffortSuffix } from "./request/helpers/effort-suffix.js";
 import { formatPlanType } from "./auth/plan-tier.js";
 
@@ -213,7 +214,9 @@ function formatAccountEmail(
 	maskEmail: boolean,
 ): string | undefined {
 	const trimmed = email?.trim() || undefined;
-	return trimmed ? `[${maskEmail ? MASKED_EMAIL : trimmed}]` : undefined;
+	if (!trimmed) return undefined;
+	const display = maskEmail ? maskEmailForDisplay(trimmed) : trimmed;
+	return display ? `[${display}]` : undefined;
 }
 
 function maskEmailsInText(
@@ -221,7 +224,10 @@ function maskEmailsInText(
 	maskEmail: boolean,
 ): string | undefined {
 	if (!value) return undefined;
-	return maskEmail ? value.replace(EMAIL_PATTERN_GLOBAL, MASKED_EMAIL) : value;
+	if (!maskEmail) return value;
+	return value.replace(EMAIL_PATTERN_GLOBAL, (match) =>
+		maskEmailForDisplay(match) ?? MASKED_EMAIL,
+	);
 }
 
 function formatQuotaLimit(
